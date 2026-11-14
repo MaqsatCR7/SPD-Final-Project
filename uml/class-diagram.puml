@@ -1,0 +1,179 @@
+@startuml
+title Library Management System - Design Patterns
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "model" {
+  abstract class LibraryItem {
+    - id: String
+    - title: String
+    - creator: String
+    - year: int
+    - available: boolean
+    + {abstract} getType(): ItemType
+    + {abstract} getBaseLoanDays(): int
+    + {abstract} getDailyFineRate(): double
+    + setAvailable(boolean)
+  }
+  class Book
+  class Magazine
+  class Dvd
+  class Member {
+    - id, name, email, phone, address
+    - membershipType: MembershipType
+    + update(ItemEvent)
+  }
+  class Loan
+  enum ItemType
+  enum MembershipType
+}
+
+package "creational" {
+  class LibraryDatabase <<Singleton>> {
+    - {static} INSTANCE
+    - LibraryDatabase()
+    + {static} getInstance(): LibraryDatabase
+  }
+  interface ItemCreator <<Factory Method>> {
+    + create(id, title, creator, year): LibraryItem
+  }
+  class BookCreator
+  class MagazineCreator
+  class DvdCreator
+  class ItemFactory {
+    + {static} create(ItemType, ...): LibraryItem
+    + {static} register(ItemType, ItemCreator)
+  }
+  class "Member.Builder" as MemberBuilder <<Builder>> {
+    + phone(String): Builder
+    + address(String): Builder
+    + membershipType(MembershipType): Builder
+    + build(): Member
+  }
+}
+
+package "structural" {
+  interface CatalogProvider <<Adapter target>> {
+    + fetchItems(): List<LibraryItem>
+  }
+  class LegacyCatalogSystem <<Adaptee>> {
+    + exportRecords(): List<String>
+  }
+  class LegacyCatalogAdapter <<Adapter>>
+
+  interface LoanPolicy <<Decorator component>> {
+    + getLoanDays(): int
+    + getFee(): double
+    + getDescription(): String
+  }
+  class BasicLoanPolicy
+  abstract class LoanPolicyDecorator
+  class ExtendedLoanDecorator
+  class SmsReminderDecorator
+  class HomeDeliveryDecorator
+
+  class LibraryFacade <<Facade>> {
+    + registerMember(...)
+    + addItem(...)
+    + importCatalog(CatalogProvider)
+    + checkout(...)
+    + returnItem(...)
+    + reserve(...)
+    + undoLastAction()
+  }
+}
+
+package "behavioral" {
+  interface ItemSubject <<Observer>> {
+    + subscribe(ItemObserver)
+    + unsubscribe(ItemObserver)
+    + notifyObservers(ItemEvent)
+  }
+  interface ItemObserver {
+    + update(ItemEvent)
+  }
+  class AuditLogObserver
+
+  interface FineStrategy <<Strategy>> {
+    + calculate(overdueDays, dailyRate): double
+  }
+  class StandardFineStrategy
+  class StudentFineStrategy
+  class PremiumFineStrategy
+  class FineCalculator <<Context>>
+  class FineStrategyProvider
+
+  interface Command <<Command>> {
+    + execute()
+    + undo()
+    + describe(): String
+  }
+  class CheckoutCommand
+  class ReturnCommand
+  class ReserveCommand
+  class CommandHistory <<Invoker>>
+}
+
+class LibraryService <<Receiver>>
+
+' --- model
+LibraryItem <|-- Book
+LibraryItem <|-- Magazine
+LibraryItem <|-- Dvd
+LibraryItem ..|> ItemSubject
+Member ..|> ItemObserver
+AuditLogObserver ..|> ItemObserver
+ItemSubject o-- ItemObserver : observers
+Loan --> LibraryItem
+Loan --> Member
+Member ..> MemberBuilder : built by
+
+' --- factory
+ItemCreator <|.. BookCreator
+ItemCreator <|.. MagazineCreator
+ItemCreator <|.. DvdCreator
+ItemFactory o-- ItemCreator
+BookCreator ..> Book
+MagazineCreator ..> Magazine
+DvdCreator ..> Dvd
+
+' --- adapter
+CatalogProvider <|.. LegacyCatalogAdapter
+LegacyCatalogAdapter --> LegacyCatalogSystem : adapts
+LegacyCatalogAdapter ..> ItemFactory
+
+' --- decorator
+LoanPolicy <|.. BasicLoanPolicy
+LoanPolicy <|.. LoanPolicyDecorator
+LoanPolicyDecorator o-- LoanPolicy : wraps
+LoanPolicyDecorator <|-- ExtendedLoanDecorator
+LoanPolicyDecorator <|-- SmsReminderDecorator
+LoanPolicyDecorator <|-- HomeDeliveryDecorator
+
+' --- strategy
+FineStrategy <|.. StandardFineStrategy
+FineStrategy <|.. StudentFineStrategy
+FineStrategy <|.. PremiumFineStrategy
+FineCalculator o-- FineStrategy
+FineStrategyProvider ..> FineStrategy
+
+' --- command
+Command <|.. CheckoutCommand
+Command <|.. ReturnCommand
+Command <|.. ReserveCommand
+CommandHistory o-- Command
+CheckoutCommand --> LibraryService
+ReturnCommand --> LibraryService
+ReserveCommand --> LibraryService
+
+' --- service + facade
+LibraryService --> LibraryDatabase
+LibraryService ..> FineCalculator
+LibraryFacade --> LibraryService
+LibraryFacade --> CommandHistory
+LibraryFacade --> LibraryDatabase
+LibraryFacade ..> ItemFactory
+LibraryFacade ..> MemberBuilder
+LibraryFacade ..> CatalogProvider
+LibraryFacade ..> LoanPolicy
+@enduml
