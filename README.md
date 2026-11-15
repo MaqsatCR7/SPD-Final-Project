@@ -1,64 +1,65 @@
-# Library Management System (Java 17+)
+# Library Management System
 
+A Java 17+ console application for managing a library catalog, members, loans, and reservations. The project demonstrates nine design patterns and includes 25 automated checks.
+
+## Team
+
+| Student | Name | Design patterns |
+| --- | --- | --- |
+| A | Максат | Singleton, Factory Method |
+| B | Исмайл | Adapter, Decorator |
+| C | Бакдаулет | Builder, Facade, Command |
+
+Бакдаулет also contributed the `Loan` model, `LibraryService`, tests, UML diagrams, documentation, and scripts.
 
 ## How to run
+
+Requires JDK 17 or later. Run these commands from the project root:
+
+```bash
+./compile.sh        # Compile the project
+./run.sh            # Run the automatic demo
+./run.sh menu       # Open the interactive console menu
+./test.sh           # Run all 25 automated checks
 ```
-./compile.sh        # build  (Windows: run.bat)
-./run.sh            # automatic demo of all patterns
-./run.sh menu       # interactive console menu
-./test.sh           # 25 automatic checks
-```
-Or in IntelliJ IDEA: mark `src` as Sources Root, `tests` as Test Sources Root, run `library.Main`
-(program argument `menu` for the interactive mode).
 
-## Patterns (9 - three of each type)
+On Windows, run `run.bat`.
 
-| # | Pattern | Type | Where | What it does in the library |
-|---|---------|------|-------|-----------------------------|
-| 1 | Singleton | Creational | `creational/singleton/LibraryDatabase` | one shared in-memory database |
-| 2 | Factory Method | Creational | `creational/factory/*` | creates Book / Magazine / DVD by `ItemType` |
-| 3 | Builder | Creational | `model/Member.Builder` | builds a Member (required + optional fields, validation) |
-| 4 | Adapter | Structural | `structural/adapter/*` | imports the legacy text catalog into our `LibraryItem`s |
-| 5 | Decorator | Structural | `structural/decorator/*` | loan extras: Extended, SMS reminder, Home delivery |
-| 6 | Facade | Structural | `structural/facade/LibraryFacade` | single simple API for the UI |
-| 7 | Observer | Behavioral | `behavioral/observer/*` | members get notified when a reserved item is returned; audit log |
-| 8 | Strategy | Behavioral | `behavioral/strategy/*` | fine calculation per membership (Standard / Student / Premium) |
-| 9 | Command | Behavioral | `behavioral/command/*` | checkout / return / reserve with **undo** |
+In IntelliJ IDEA, mark `src` as **Sources Root** and `tests` as **Test Sources Root**, then run `library.Main`. Pass `menu` as a program argument to open the interactive menu.
 
-Patterns cooperate: Facade -> Factory/Builder/Decorator/Command; Command -> Service -> Singleton + Strategy;
-Service -> Item.setAvailable -> Observer; Adapter -> Factory.
+Expected test result: `Passed: 25, Failed: 0`.
 
-## Suggested work split (3 students, each >= 2 patterns, 3 here)
+## Design patterns
 
-| Student | Patterns | Files |
-|---------|----------|-------|
-| Student A | Singleton, Factory Method, Builder | `creational/*`, `model/*` |
-| Student B | Adapter, Decorator, Facade | `structural/*`, `ui/*` |
-| Student C | Observer, Strategy, Command | `behavioral/*`, `service/*`, `tests/*` |
+| Pattern | Type | Location | Purpose |
+| --- | --- | --- | --- |
+| Singleton | Creational | `creational/singleton/LibraryDatabase` | Provides one shared in-memory database. |
+| Factory Method | Creational | `creational/factory/` | Creates books, magazines, and DVDs based on `ItemType`. |
+| Builder | Creational | `model/Member.Builder` | Creates and validates members with required and optional fields. |
+| Adapter | Structural | `structural/adapter/` | Converts legacy catalog records into `LibraryItem` objects. |
+| Decorator | Structural | `structural/decorator/` | Adds loan options such as extended duration, SMS reminders, and home delivery. |
+| Facade | Structural | `structural/facade/LibraryFacade` | Gives the console UI a single entry point for library operations. |
+| Observer | Behavioral | `behavioral/observer/` | Notifies members when reserved items are returned and records events in the audit log. |
+| Strategy | Behavioral | `behavioral/strategy/` | Calculates late fees according to Standard, Student, or Premium membership rules. |
+| Command | Behavioral | `behavioral/command/` | Encapsulates checkout, return, and reservation operations and supports undo. |
 
-For 2 students: A takes Singleton/Factory/Builder/Adapter, B takes Decorator/Facade/Observer/Strategy/Command.
+## How the patterns work together
 
-## SOLID / clean code
-- **S**: model, service (rules), ui (printing), facade (entry point), each class has one job.
-- **O**: new item type = new `ItemCreator`; new fine rule = new `FineStrategy`; new loan option = new decorator.
-- **L**: Book / Magazine / Dvd and all strategies/decorators are interchangeable through their interfaces.
-- **I**: small interfaces (`ItemObserver`, `ItemSubject`, `FineStrategy`, `Command`, `CatalogProvider`).
-- **D**: Commands depend on `LibraryService`; the UI depends on the Facade; Adapter depends on `CatalogProvider`.
-- **KISS / DRY**: no if/else chains for types (maps/enums + polymorphism), ids and printing are in one place each.
+The console UI calls `LibraryFacade`. The facade uses factories to create catalog items, the builder to register members, decorators to add loan options, and commands to run library operations. Commands call `LibraryService`, which uses the shared database and selects the appropriate fine strategy. Changes in item availability trigger observer notifications. The adapter uses the factory to turn legacy catalog records into items.
 
-## Git IMPORTANT - contribution check, -5% penalty otherwise
-Every team member must make their own commits from their own account:
-```
-git init
-git add .
-git commit -m "Initial structure"
-git remote add origin <repo-url>
-git push -u origin main
-```
-Each student commits and pushes the files of their patterns (see table above) with meaningful messages.
+## SOLID and clean code
 
-## Submission checklist (deadline Mon 15 Nov 2026, 23:59, each student submits!)
-- [ ] Report PDF (`docs/REPORT.md` -> add screenshots + UML image -> export to PDF)
-- [ ] Source code zip
-- [ ] Git repo with commits of ALL members
-- [ ] At least 6 patterns, 2 per student, 1 of each type
+- **Single Responsibility** — Models represent library data, the service enforces business rules, and the UI handles console input and output.
+- **Open/Closed** — New item creators, fine strategies, and loan decorators can be added through their existing interfaces.
+- **Liskov Substitution** — Books, magazines, and DVDs can be used through `LibraryItem`. Fine strategies share the same calculation contract.
+- **Interface Segregation** — Focused interfaces such as `ItemObserver`, `FineStrategy`, `Command`, and `CatalogProvider` define specific responsibilities.
+- **Dependency Inversion** — Fine calculations use `FineStrategy`, and the catalog adapter accepts a `CatalogProvider`.
+- **KISS and DRY** — Enums and polymorphism handle type-specific behavior, while shared logic stays in one place.
+
+## Project documentation
+
+- [Project report](docs/REPORT.md)
+- [Defense questions and answers](docs/DEFENSE_QA.md)
+- [UML diagrams](uml/)
+
+
